@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  WARDEN
+  STAFF
+  ADMIN
+}
+
+enum Category {
+  PLUMBING
+  ELECTRICAL
+  INTERNET
+  STRUCTURAL
+  OTHER
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum ComplaintStatus {
+  PENDING
+  CLASSIFIED
+  ROUTED
+  DRAFTED
+  NOTIFIED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum StepType {
+  CLASSIFY
+  ROUTE
+  DRAFT
+}
+
+model User {
+  id                 String      @id @default(cuid())
+  name               String
+  email              String      @unique
+  role               Role
+  roomNumber         String?
+  staffCategory      Category?
+  complaints         Complaint[] @relation("StudentComplaints")
+  assignedComplaints Complaint[] @relation("AssignedStaff")
+  createdAt          DateTime    @default(now())
+}
+
+model Complaint {
+  id            String          @id @default(cuid())
+  rawText       String
+  roomNumber    String
+  imageUrl      String?
+  student       User            @relation("StudentComplaints", fields: [studentId], references: [id])
+  studentId     String
+  category      Category?
+  urgency       Urgency?
+  routedRole    Role?
+  assignedTo    User?           @relation("AssignedStaff", fields: [assignedToId], references: [id])
+  assignedToId  String?
+  draftMessage  String?
+  status        ComplaintStatus @default(PENDING)
+  steps         AgentStep[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model AgentStep {
+  id          String    @id @default(cuid())
+  complaint   Complaint @relation(fields: [complaintId], references: [id])
+  complaintId String
+  stepType    StepType
+  input       Json
+  output      Json
+  reasoning   String?
+  durationMs  Int?
+  createdAt   DateTime  @default(now())
+}
